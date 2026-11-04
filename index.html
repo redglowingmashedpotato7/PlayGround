@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#12160f" />
+  <meta name="description" content="Dead End Drive — a sunny suburban neighborhood where every open house is a Doom level." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23b8ff3d' d='M32 3 57 29 32 61 7 29z'/%3E%3C/svg%3E" />
+  <title>DEAD END DRIVE — Every house is a Doom level</title>
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene" aria-label="3D game view"></canvas>
+    <div id="grade"></div>
+    <div id="grain"></div>
+    <div id="vignette"></div>
+    <div id="damageFlash"></div>
+
+    <!-- Crosshair -->
+    <div id="crosshair" class="hidden" aria-hidden="true">
+      <i class="ch-dot"></i>
+      <i class="ch-line ch-n"></i><i class="ch-line ch-e"></i><i class="ch-line ch-s"></i><i class="ch-line ch-w"></i>
+    </div>
+
+    <!-- HUB UI -->
+    <div id="hub-ui" class="hidden">
+      <header class="hub-top">
+        <div class="brand">
+          <div class="brand-plumbob" aria-hidden="true"><span></span></div>
+          <div class="brand-type">
+            <h1>DEAD END<span>DRIVE</span></h1>
+            <p>Every house is a Doom level</p>
+          </div>
+        </div>
+        <div class="hub-right">
+          <div class="hub-stat">
+            <span class="hub-stat-label">SOLD</span>
+            <strong id="hubSold">0<span>/4</span></strong>
+          </div>
+          <div class="hub-stat">
+            <span class="hub-stat-label">SOULS BANKED</span>
+            <strong id="hubSouls">0</strong>
+          </div>
+          <div class="audio-pill" id="audioHint">SOUND ON</div>
+        </div>
+      </header>
+
+      <div id="hoverTag" class="hover-tag hidden">
+        <span class="hover-dot"></span>
+        <strong id="hoverName">—</strong>
+        <em id="hoverAddr">—</em>
+      </div>
+
+      <aside id="listing" class="listing hidden">
+        <div class="listing-stripe" id="listStripe"></div>
+        <div class="listing-body">
+          <div class="listing-kicker"><span id="listIndex">OPEN HOUSE 01</span><span class="listing-status" id="listStatus">FOR SALE</span></div>
+          <h2 id="listName">The Open House</h2>
+          <p class="listing-addr" id="listAddr">1313 Sugar Maple Court</p>
+          <div class="listing-rating">
+            <span id="listStars" class="stars">★☆☆☆</span>
+            <span class="rating-label" id="listDanger">STARTER HELL</span>
+          </div>
+          <p class="listing-desc" id="listDesc">Fresh paint. Open floor plan. Something in the crawlspace is breathing.</p>
+          <div class="listing-facts">
+            <div><span>DEMONS</span><strong id="listDemons">9</strong></div>
+            <div><span>SOULS</span><strong>3</strong></div>
+            <div><span>BEST</span><strong id="listBest">—:—</strong></div>
+          </div>
+          <button id="enterBtn" class="btn btn-primary" type="button">
+            <span>ENTER PROPERTY</span>
+            <small id="enterSub">Mouse + keyboard</small>
+          </button>
+          <div class="listing-foot"><span class="key-chip">1–4</span> browse listings <span class="key-chip">ENTER</span> tour</div>
+        </div>
+      </aside>
+
+      <footer class="hub-footer">
+        <div class="hub-tip"><span class="tip-gem"></span><strong>CLICK A HOUSE</strong> to read its listing. Step inside to cleanse it.</div>
+        <div class="hub-legal">DEAD END DRIVE PROPERTIES LLC · LICENSED IN THE NETHERWORLD · BROKER: M. PHELES</div>
+      </footer>
+    </div>
+
+    <!-- LEVEL HUD -->
+    <div id="level-hud" class="hidden">
+      <div class="level-top-left">
+        <div class="level-house"><span id="levelIndex">01</span><div><strong id="levelName">THE OPEN HOUSE</strong><em id="levelAddr">1313 SUGAR MAPLE CT.</em></div></div>
+        <div class="objective">
+          <div class="obj-label">CURRENT OBJECTIVE</div>
+          <div id="objText">COLLECT THE THREE SOUL ORBS</div>
+          <div class="obj-bar"><i id="objBar"></i></div>
+        </div>
+        <div class="kill-line"><span>DEMONS PURGED</span><strong id="killCount">0 / 9</strong></div>
+      </div>
+
+      <div class="level-top-right">
+        <div class="minimap-wrap">
+          <canvas id="minimap" width="196" height="196"></canvas>
+          <div class="minimap-frame"></div>
+          <div id="waypoint" class="waypoint"><span id="waypointArrow">▲</span><b id="waypointDist">—</b></div>
+        </div>
+        <div class="level-timer"><span>TOUR TIME</span><strong id="levelTimer">00:00</strong></div>
+      </div>
+
+      <div id="interactPrompt" class="interact-prompt hidden"><span class="key-chip">E</span> <b>STEP INTO THE PORTAL</b></div>
+
+      <div class="hud-bottom">
+        <div class="hp-block">
+          <div class="hp-icon">♥</div>
+          <div class="hp-meta"><span>VITALITY</span><strong id="hpValue">100</strong></div>
+          <div class="hp-bar"><i id="hpBar"></i></div>
+          <div class="armor-line"><span class="shield">◈</span> <b id="armorValue">0</b> ARMOR</div>
+        </div>
+
+        <div class="sim-face-wrap">
+          <canvas id="simFace" width="80" height="80"></canvas>
+          <div class="sim-face-ring"></div>
+          <div class="sim-face-label">PLUMB-BOB</div>
+        </div>
+
+        <div class="ammo-block">
+          <div class="weapon-name" id="weaponName">PUMP SHOTGUN</div>
+          <div class="ammo-readout"><strong id="ammoValue">8</strong><span id="ammoReserve">/ 32</span></div>
+          <div class="ammo-pips" id="ammoPips"></div>
+          <div class="weapon-keys"><span class="key-chip">1</span> SHOTGUN <span class="key-chip">2</span> PISTOL <span class="key-chip">R</span> RELOAD</div>
+        </div>
+
+        <div class="souls-block">
+          <span class="souls-label">SOUL ORBS</span>
+          <div class="soul-slots" id="soulSlots">
+            <i class="soul-slot"></i><i class="soul-slot"></i><i class="soul-slot"></i>
+          </div>
+          <div class="souls-status" id="soulsStatus">PORTAL SEALED</div>
+        </div>
+      </div>
+
+      <div class="lock-hint" id="lockHint"><span class="mouse-icon"></span> CLICK TO TAKE CONTROL · WASD MOVE · MOUSE LOOK</div>
+      <div class="level-subtitle" id="levelSubtitle"></div>
+    </div>
+
+    <!-- Touch controls -->
+    <div id="touch-controls" class="hidden">
+      <div id="stick" class="stick"><div class="stick-ring"></div><div id="stickKnob" class="stick-knob"></div><span>MOVE</span></div>
+      <div class="touch-look-hint">DRAG TO LOOK</div>
+      <div class="touch-actions">
+        <button id="btnInteract" class="touch-btn touch-small" type="button">USE</button>
+        <button id="btnReload" class="touch-btn touch-small" type="button">RELOAD</button>
+        <button id="btnSwitch" class="touch-btn touch-small" type="button">SWAP</button>
+        <button id="btnPause" class="touch-btn touch-small" type="button">II</button>
+        <button id="btnFire" class="touch-btn touch-fire" type="button">FIRE</button>
+      </div>
+    </div>
+
+    <!-- Toasts -->
+    <div id="toasts"></div>
+
+    <!-- INTRO -->
+    <div id="intro" class="screen">
+      <div class="intro-bg"></div>
+      <div class="intro-content">
+        <div class="intro-kicker"><span class="live-dot"></span> OPEN HOUSES ALL WEEKEND</div>
+        <div class="intro-logo">
+          <div class="logo-plumbob" aria-hidden="true"><span></span></div>
+          <h1>DEAD END<br /><em>DRIVE</em></h1>
+          <div class="logo-rule"><span></span><b>EST. 1996</b><span></span></div>
+        </div>
+        <p class="intro-tag">A sunny suburban neighborhood where<br /><strong>every house is a Doom level.</strong></p>
+        <p class="intro-copy">Tour four exclusive properties. Collect the souls. Try not to get attached to the carpet.</p>
+        <button id="startBtn" class="btn btn-start" type="button"><span>START</span><small>ENTER THE NEIGHBORHOOD</small></button>
+        <div class="intro-controls">
+          <div><span class="key-chip">WASD</span> MOVE</div>
+          <div><span class="key-chip">MOUSE</span> LOOK / FIRE</div>
+          <div><span class="key-chip">R</span> RELOAD</div>
+          <div><span class="key-chip">1 2</span> WEAPONS</div>
+          <div><span class="key-chip">E</span> USE</div>
+        </div>
+        <div class="intro-agent"><span>YOUR AGENT</span> “Bring a shotgun. The HOA is very hands-on.”</div>
+      </div>
+      <div class="intro-scan"></div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="loading" class="screen hidden">
+      <div class="loading-card">
+        <div class="loading-plumbob"><span></span></div>
+        <div class="loading-kicker" id="loadingKicker">UNLOCKING THE FRONT DOOR</div>
+        <h2 id="loadingName">THE OPEN HOUSE</h2>
+        <div class="loading-bar"><i></i></div>
+        <p id="loadingTip">Tip: soul orbs are usually where the previous owners kept their secrets.</p>
+      </div>
+    </div>
+
+    <!-- PAUSE -->
+    <div id="pause" class="screen screen-dim hidden">
+      <div class="modal">
+        <div class="modal-kicker">TOUR INTERRUPTED</div>
+        <h2>PAUSED</h2>
+        <p>Take a breath. The demons can wait.</p>
+        <button id="resumeBtn" class="btn btn-primary" type="button">RESUME TOUR</button>
+        <button id="restartBtn" class="btn btn-ghost" type="button">RESTART HOUSE</button>
+        <button id="leaveBtn" class="btn btn-ghost" type="button">LEAVE NEIGHBORHOOD</button>
+      </div>
+    </div>
+
+    <!-- DEATH -->
+    <div id="death" class="screen screen-blood hidden">
+      <div class="modal">
+        <div class="death-plumbob"><span></span></div>
+        <div class="modal-kicker">PROPERTY DAMAGE REPORT</div>
+        <h2>YOU DIED</h2>
+        <p id="deathCopy">The seller has accepted your offer. Unfortunately, so has the basement.</p>
+        <div class="result-grid">
+          <div><span>DEMONS PURGED</span><strong id="deathKills">0 / 9</strong></div>
+          <div><span>SOULS FOUND</span><strong id="deathSouls">0 / 3</strong></div>
+          <div><span>TOUR TIME</span><strong id="deathTime">00:00</strong></div>
+        </div>
+        <button id="retryBtn" class="btn btn-primary" type="button">TRY THIS HOUSE AGAIN</button>
+        <button id="deathLeaveBtn" class="btn btn-ghost" type="button">BACK TO THE NEIGHBORHOOD</button>
+      </div>
+    </div>
+
+    <!-- COMPLETE -->
+    <div id="complete" class="screen screen-win hidden">
+      <div class="modal">
+        <div class="win-plumbob"><span></span></div>
+        <div class="modal-kicker" id="completeKicker">PROPERTY CLEANSED</div>
+        <h2 id="completeTitle">HOUSE CLEARED</h2>
+        <p id="completeCopy">The open house is closed. The neighbors are thrilled.</p>
+        <div class="result-grid">
+          <div><span>DEMONS PURGED</span><strong id="winKills">9 / 9</strong></div>
+          <div><span>SOULS BANKED</span><strong id="winSouls">3 / 3</strong></div>
+          <div><span>TOUR TIME</span><strong id="winTime">00:00</strong></div>
+        </div>
+        <div class="win-grade" id="winGrade">GRADE A</div>
+        <button id="nextBtn" class="btn btn-primary" type="button">NEXT OPEN HOUSE</button>
+        <button id="winLeaveBtn" class="btn btn-ghost" type="button">BACK TO THE NEIGHBORHOOD</button>
+      </div>
+    </div>
+
+    <div id="fade"></div>
+    <button id="muteBtn" class="mute-btn" type="button" aria-label="Toggle sound">
+      <span class="mute-on">♪</span><span class="mute-off">✕</span>
+    </button>
+    <div id="rotateNote" class="rotate-note">BEST IN LANDSCAPE — TURN YOUR PHONE</div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
